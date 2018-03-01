@@ -493,7 +493,7 @@ get_system_exe_extension() {
 	riscos)
 		_exeext=",e1f"
 		;;
-	3ds | dreamcast | ds | gamecube | n64 | ps2 | psp | wii)
+	3ds | dreamcast | ds | gamecube | n64 | ps2 | psp | switch | wii)
 		_exeext=".elf"
 		;;
 	gph-linux)
@@ -886,7 +886,7 @@ Configuration:
   -h, --help              display this help and exit
   --backend=BACKEND       backend to build (3ds, android, dc, dingux, ds, gcw0,
                           gph, iphone, ios7, linuxmoto, maemo, n64, null, openpandora,
-                          ps2, psp, psp2, samsungtv, sdl, tizen, webos, wii, wince) [sdl]
+                          ps2, psp, psp2, samsungtv, switch, sdl, tizen, webos, wii, wince) [sdl]
 
 Installation directories:
   --prefix=PREFIX         install architecture-independent files in PREFIX
@@ -1599,6 +1599,11 @@ samsungtv)
 	_host_cpu=arm
 	_host_alias=arm-linux-gnueabi
 	;;
+switch)
+	_host_os=switch
+	_host_cpu=aarch64
+	_host_alias=aarch64-none-elf
+	;;
 tizen)
  	_host_os=tizen
 	_host_cpu=arm
@@ -1721,7 +1726,7 @@ android)
 		exit 1
 	fi
 	;;
-3ds | ds | gamecube | wii)
+3ds | ds | gamecube | wii | switch)
 	if test -z "$DEVKITPRO"; then
 		echo "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to devkitPRO>"
 		exit 1
@@ -1989,7 +1994,7 @@ if test "$have_gcc" = yes ; then
 			case $_host_os in
 			# newlib-based system include files suppress non-C89 function
 			# declarations under __STRICT_ANSI__
-			3ds | amigaos* | android | androidsdl | dreamcast | ds | gamecube | mingw* | n64 | psp | ps2 | ps3 | psp2 | tizen | wii | wince )
+			3ds | amigaos* | android | androidsdl | dreamcast | ds | gamecube | mingw* | n64 | psp | ps2 | ps3 | psp2 | switch | tizen | wii | wince )
 				;;
 			*)
 				append_var CXXFLAGS "-ansi"
@@ -2714,6 +2719,23 @@ case $_host_os in
 		append_var CXXFLAGS "-D_PSP_FW_VERSION=150"
 		add_line_to_config_mk 'PSP = 1'
 		;;
+	switch)
+		_optimization_level=-O2
+		append_var DEFINES "-DSWITCH"
+		append_var CXXFLAGS "-march=armv8-a"
+		append_var CXXFLAGS "-mtune=cortex-a57"
+		append_var CXXFLAGS "-mtp=soft"
+		append_var CXXFLAGS "-fPIE"
+		append_var CXXFLAGS "-ffunction-sections"
+		append_var CXXFLAGS "-fno-exceptions"
+		append_var CXXFLAGS "-I$DEVKITPRO/libnx/include"
+		if test "$_dynamic_modules" = no ; then
+			append_var LDFLAGS "-Wl,--gc-sections"
+		else
+			append_var LDFLAGS "-Wl,--no-gc-sections"
+		fi
+		append_var LIBS "-lnx"
+		;;
 	riscos)
 		append_var DEFINES "-DRISCOS"
 		add_line_to_config_mk 'RISCOS = 1'
@@ -3243,6 +3265,18 @@ if test -n "$_host"; then
 			_mt32emu=no
 			_vkeybd=yes
 			;;
+		switch)
+			append_var DEFINES "-DDISABLE_FANCY_THEMES"
+			append_var DEFINES "-DDISABLE_SID"
+			append_var DEFINES "-DDISABLE_NES_APU"
+			_backend="switch"
+			_build_scalers=no
+			_vkeybd=yes
+			_mt32emu=no
+			# Should use Tremor instead of Vorbis
+			_vorbis=no
+			_port_mk="backends/platform/switch/switch.mk"
+			;;
 		tizen)
 			_unix=yes
 			_backend="tizen"
@@ -3419,6 +3453,8 @@ case $_backend in
 		;;
 	sdl)
 		;;
+	switch)
+		;;
 	tizen)
 		# dirent.h not available. NONSTANDARD_PORT==ensure portdefs.h is included
 		append_var DEFINES "-DTIZEN -DDISABLE_STDIO_FILESTREAM -DNONSTANDARD_PORT"
@@ -3522,7 +3558,7 @@ esac
 # Enable 16bit support only for backends which support it
 #
 case $_backend in
-	3ds | android | androidsdl | dingux | dc | gph | iphone | ios7 | maemo | openpandora | psp | psp2 | samsungtv | sdl | tizen | webos | wii)
+	3ds | android | androidsdl | dingux | dc | gph | iphone | ios7 | maemo | openpandora | psp | psp2 | samsungtv | switch | sdl | tizen | webos | wii)
 		if test "$_16bit" = auto ; then
 			_16bit=yes
 		else
@@ -3598,7 +3634,7 @@ esac
 #
 echo_n "Checking if host is POSIX compliant... "
 case $_host_os in
-	amigaos* | cygwin* | dreamcast | ds | gamecube | mingw* | n64 | ps2 | ps3 | psp2 | psp | riscos | wii | wince)
+	amigaos* | cygwin* | dreamcast | ds | gamecube | mingw* | n64 | ps2 | ps3 | psp2 | psp | riscos | switch | wii | wince)
 		_posix=no
 		;;
 	3ds | android | androidsdl | beos* | bsd* | darwin* | freebsd* | gnu* | gph-linux | haiku* | hpux* | iphone | ios7 | irix*| k*bsd*-gnu* | linux* | maemo | mint* | netbsd* | openbsd* | solaris* | sunos* | uclinux* | webos)
